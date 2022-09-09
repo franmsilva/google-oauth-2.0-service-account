@@ -1,4 +1,5 @@
 const axios = require("axios");
+const { addMinutes } = require("date-fns");
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const QueryString = require("qs");
@@ -8,10 +9,12 @@ require("dotenv").config();
 const app = express();
 const port = 3000;
 
+const getTimestampInSeconds = (date) => date.getTime() / 1000;
+
 app.get("/", async (_req, _res) => {
   const date = new Date();
-  const timeNow = date.getTime() / 1000;
-  const timeFuture = addMinutes(date, 30).getTime() / 1000;
+  const currentTime = getTimestampInSeconds(date);
+  const expirationTime = getTimestampInSeconds(addMinutes(date, 30));
 
   const fixedKey = process.env.PRIVATE_KEY.replace(
     new RegExp("\\\\n", "g"),
@@ -24,8 +27,8 @@ app.get("/", async (_req, _res) => {
         iss: "lick-reviews@lick-website.iam.gserviceaccount.com",
         scope: "https://www.googleapis.com/auth/business.manage",
         aud: "https://oauth2.googleapis.com/token",
-        exp: timeFuture,
-        iat: timeNow,
+        exp: expirationTime,
+        iat: currentTime,
       },
       fixedKey,
       { algorithm: "RS256" }
@@ -63,17 +66,17 @@ app.get("/", async (_req, _res) => {
       accountRes.data
     );
 
-    const inviteRes = await axios({
-      method: "post",
-      url: `https://mybusinessaccountmanagement.googleapis.com/v1/accounts/104102682614641845545/invitations/L115116701173454421616:accept`,
-      headers: {
-        Authorization: `${authResponse.data.token_type} ${authResponse.data.access_token}`,
-      },
-    });
-    console.log(
-      "🚀 ~ file: index.js ~ line 63 ~ app.get ~ inviteRes",
-      inviteRes.data
-    );
+    // const inviteRes = await axios({
+    //   method: "post",
+    //   url: `https://mybusinessaccountmanagement.googleapis.com/v1/accounts/104102682614641845545/invitations/L115116701173454421616:accept`,
+    //   headers: {
+    //     Authorization: `${authResponse.data.token_type} ${authResponse.data.access_token}`,
+    //   },
+    // });
+    // console.log(
+    //   "🚀 ~ file: index.js ~ line 63 ~ app.get ~ inviteRes",
+    //   inviteRes.data
+    // );
 
     const locationsRes = await axios({
       method: "get",
